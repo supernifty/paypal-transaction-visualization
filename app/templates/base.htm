@@ -1,0 +1,24 @@
+<html>
+<head>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <title>{% block title %}{% endblock %}</title>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a href="/">Home</a>
+  <h2>{% block heading %}{% endblock %}</h2>
+{% if message %}
+  <div id="message">{{ message }}</div>
+{% endif %}
+
+  <div id="content">
+    {% block content %}
+    {% endblock %}
+  </div>
+  <br/>
+  <div id="footer">
+PayPal Visualization by <a href="http://www.supernifty.com.au/">Supernifty</a>. 
+Download the <a href="https://github.com/supernifty/paypal-transaction-visualization">source</a>.
+  </div>
+</body>
+</html>

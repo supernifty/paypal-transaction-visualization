@@ -1,0 +1,13 @@
+{% extends "base.htm" %}
+
+{% block title %}PayPal Account Visualization{% endblock %}
+{% block heading %}PayPal Account Visualization{% endblock %}
+
+{% block content %}
+<p>
+<b>{{ result|length }} result{{ result|length|pluralize }}.</b>
+</p>
+<p>
+<img src="http://chart.apis.google.com/chart?chxl=0:|{{ months|join:"|" }}&chxp=0,0.3,1.3,2.3,3.3,4.3,5.3,6.3,7.3,8.3,9.3,10.3,11.3&chxr=0,0,11|1,{{ min }},{{ max }}&chxt=x,y&chbh=a&chs=600x480&cht=bvg&chco=008000,AA0033,FF9900&chds={{ min }},{{ max }},{{ min }},{{ max }},{{ min }},{{ max }}&chd=t:{{ in_list|join:"," }}|{{ out_list|join:"," }}|{{ net_list|join:"," }}&chdl=Income|Expenditure|Net&chg=-1,-1,0,0,4&chma=|2,2&chtt=Account+Activity+By+Month"/>
+</p>
+{% endblock %}

@@ -1,0 +1,5 @@
+PayPal Transaction Visualization
+================================
+A sample Google App Engine application that demonstrates how to use PayPal's Permissions API to show an account usage visualization.
+
+See the corresponding x.com tutorial for the full story.
