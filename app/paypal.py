@@ -228,11 +228,8 @@ class TransactionSearch( object ):
         'net_amount': self.safe_get( 'L_NETAMT%i' % self.count ),
       } )
       self.count += 1
-    logging.debug( self.response )
 
   def ok( self ):
-    logging.debug( self.response.has_key( 'ACK' ) )
-    logging.debug( self.response[ 'ACK' ] == 'Success' )
     return self.response.has_key( 'ACK' ) and self.response[ 'ACK' ][0] == 'Success'
 
   def safe_get( self, field ):

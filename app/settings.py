@@ -3,6 +3,9 @@
 PAYPAL_ENDPOINT = 'https://svcs.sandbox.paypal.com/Permissions/' # sandbox
 #PAYPAL_ENDPOINT = 'https://svcs.paypal.com/Permissions/' # production
 
+PAYPAL_PAYMENT_HOST = 'https://www.sandbox.paypal.com/au/cgi-bin/webscr' # sandbox
+#PAYPAL_PAYMENT_HOST = 'https://www.paypal.com/webscr' # production
+
 PAYPAL_API_ENDPOINT = 'https://api.sandbox.paypal.com/nvp' # sandbox
 #PAYPAL_API_ENDPOINT = 'https://api.paypal.com/nvp' # production
 
