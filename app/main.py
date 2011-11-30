@@ -1,4 +1,5 @@
 import cgi
+from collections import defaultdict
 import datetime
 import decimal
 import logging
@@ -60,6 +61,8 @@ class Return(webapp.RequestHandler):
             month = 1
             year += 1
 
+        groups = {}
+        groups['names'] = defaultdict(float)
         for i in tx.items:
           date = i['timestamp'].split( 'T' )[0]
           d = datetime.datetime.strptime( date, "%Y-%m-%d")
@@ -73,6 +76,8 @@ class Return(webapp.RequestHandler):
             months[ key ][ 'net' ] += amount
           else:
             logging.debug( "key " + key + " not found" )
+          # group other fields
+          groups['names'][i['name']] += float( i['net_amount'] )
         
         month_list = []
         in_list = []
@@ -91,7 +96,33 @@ class Return(webapp.RequestHandler):
             maximum = months[k]['in']
           if months[k]['out'] < minimum:
             minimum = months[k]['out']
-        data = { 'result': tx.items, 'months': month_list, 'max': maximum, 'min': minimum, 'in_list': in_list, 'out_list': out_list, 'net_list': net_list }
+
+        y_list = []
+        y_value = []
+        y_max = 0
+        x_list = []
+        x_value = []
+        x_max = 0
+        for k in groups['names']:
+          amt = groups['names'][k] 
+          if amt > 0:
+            y_list.append( k )
+            y_value.append( groups['names'][k] )
+            if amt > y_max:
+              y_max = amt
+          else:
+            x_list.append( k )
+            x_value.append( -groups['names'][k] )
+            if amt < x_max:
+              x_max = amt
+        data = { 
+          'result': tx.items, 
+          'months': month_list, 
+          'max': maximum, 'min': minimum, 
+          'in_list': in_list, 'out_list': out_list, 'net_list': net_list, 
+          'yl': y_list, 'yv': y_value, 'ymax': y_max,
+          'xl': x_list, 'xv': x_value, 'xmax': -x_max,
+          'groups': groups }
         path = os.path.join(os.path.dirname(__file__), 'templates/tx.htm')
         self.response.out.write(template.render(path, data))
       else:
