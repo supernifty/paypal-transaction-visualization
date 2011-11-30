@@ -238,6 +238,40 @@ class TransactionSearch( object ):
     else:
       return ''
 
+class GetBalance( object ):
+  def __init__( self, signature, remote_address ):
+    headers = {
+      'X-PP-AUTHORIZATION': signature,
+    }
+
+    data = {
+      'METHOD': 'GetBalance',
+      'RETURNALLCURRENCIES': '0', # just the primary
+      'VERSION': '74.0',
+    }
+
+    self.raw_request = urllib.urlencode( data )
+    self.raw_response = url_request( "%s" % settings.PAYPAL_API_ENDPOINT, data=self.raw_request, headers=headers ).content()
+    logging.debug( "response was: %s" % self.raw_response )
+    self.response = cgi.parse_qs( self.raw_response ) # 2.5
+    self.items = []
+    self.count = 0
+    while self.response.has_key( "L_AMT%i" % self.count ):
+      self.items.append( {
+        'amount': self.safe_get( "L_AMT%i" % self.count ),
+        'currency': self.safe_get( "L_CURRENCYCODE%i" % self.count ),
+      } )
+      self.count += 1
+
+  def ok( self ):
+    return self.response.has_key( 'ACK' ) and self.response[ 'ACK' ][0] == 'Success'
+
+  def safe_get( self, field ):
+    if self.response.has_key( field ):
+      return self.response[ field ][0]
+    else:
+      return ''
+
 class AuthorizationSignature( object ):
   '''generates the X-PP-AUTHORIZATION header'''
   def __init__( self, token, token_secret, parameters ):

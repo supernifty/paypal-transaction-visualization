@@ -13,12 +13,13 @@
 <p>
 <table>
 <tr><td>
-Income Sources<br/>
-<img src="http://chart.apis.google.com/chart?chs=300x300&cht=p&chd=t:{{ yv|join:"," }}&chdl={{ yl|join:"|" }}&chds=0,{{ ymax }}"/><br/>
+<img src="http://chart.apis.google.com/chart?chs=300x300&cht=p&chd=t:{{ yv|join:"," }}&chdl={{ yl|join:"|" }}&chds=0,{{ ymax }}&chtt=Income+Sources"/><br/>
 </td><td>
-Expenditure<br/>
-<img src="http://chart.apis.google.com/chart?chs=300x300&cht=p&chd=t:{{ xv|join:"," }}&chdl={{ xl|join:"|" }}&chds=0,{{ xmax }}"/><br/>
+<img src="http://chart.apis.google.com/chart?chs=300x300&cht=p&chd=t:{{ xv|join:"," }}&chdl={{ xl|join:"|" }}&chds=0,{{ xmax }}&chtt=Expenditure"/><br/>
 </td></tr>
 </table>
+</p>
+<p>
+<img src="http://chart.apis.google.com/chart?chxr=0,{{ bmin }},{{ bmax }}&chxt=y&chs=600x320&cht=lc&chco=3D7930&chd=t:{{ balances|join:"," }}&chg=14.3,-1,1,1&chls=2,4,0&chm=B,C5D4B5BB,0,0,0&chtt=Balance"/>
 </p>
 {% endblock %}

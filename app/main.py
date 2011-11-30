@@ -33,7 +33,7 @@ class Home(webapp.RequestHandler):
 
   def post(self):
     # start and redirect to paypal
-    permission = paypal.RequestPermissions( "%sreturn" % self.request.uri, "TRANSACTION_SEARCH", self.request.remote_addr )
+    permission = paypal.RequestPermissions( "%sreturn" % self.request.uri, ["TRANSACTION_SEARCH", "ACCOUNT_BALANCE"], self.request.remote_addr )
     if permission.ok():
       logging.debug( "next_url: " + permission.next_url() )
       self.redirect( permission.next_url() )
@@ -50,81 +50,90 @@ class Return(webapp.RequestHandler):
       start_date = datetime.datetime.now() - datetime.timedelta( days=365 )
       tx = paypal.TransactionSearch( start_date, signature.signature(), self.request.remote_addr )
       if tx.ok():
-        # build monthly array
-        month = start_date.month
-        year = start_date.year
-        months = {}
-        for m in xrange( 0, 12 ):
-          months[ "M%04i/%02i" % ( year, month ) ] = { 'month': month, 'year': year, 'in': 0.00, 'out': 0.00, 'net': 0.00 }
-          month += 1
-          if month == 13:
-            month = 1
-            year += 1
-
-        groups = {}
-        groups['names'] = defaultdict(float)
-        for i in tx.items:
-          date = i['timestamp'].split( 'T' )[0]
-          d = datetime.datetime.strptime( date, "%Y-%m-%d")
-          key = "M%04i/%02i" % ( d.year, d.month )
-          if months.has_key( key ):
-            amount = float( i[ 'net_amount' ] )
-            if amount > 0:
-              months[ key ][ 'in' ] += amount
+        balance = paypal.GetBalance( signature.signature(), self.request.remote_addr )
+        if balance.ok():
+          # build monthly array
+          month = start_date.month
+          year = start_date.year
+          months = {}
+          for m in xrange( 0, 12 ):
+            months[ "M%04i/%02i" % ( year, month ) ] = { 'month': month, 'year': year, 'in': 0.00, 'out': 0.00, 'net': 0.00 }
+            month += 1
+            if month == 13:
+              month = 1
+              year += 1
+  
+          groups = {}
+          groups['names'] = defaultdict(float)
+          for i in tx.items:
+            date = i['timestamp'].split( 'T' )[0]
+            d = datetime.datetime.strptime( date, "%Y-%m-%d")
+            key = "M%04i/%02i" % ( d.year, d.month )
+            if months.has_key( key ):
+              amount = float( i[ 'net_amount' ] )
+              if amount > 0:
+                months[ key ][ 'in' ] += amount
+              else:
+                months[ key ][ 'out' ] += amount
+              months[ key ][ 'net' ] += amount
             else:
-              months[ key ][ 'out' ] += amount
-            months[ key ][ 'net' ] += amount
-          else:
-            logging.debug( "key " + key + " not found" )
-          # group other fields
-          groups['names'][i['name']] += float( i['net_amount'] )
-        
-        month_list = []
-        in_list = []
-        out_list = []
-        net_list = []
-        keys = months.keys()
-        keys.sort()
-        maximum = 0
-        minimum = 0
-        for k in keys:
-          month_list.append( "%02i/%04i" % ( months[k]['month'], months[k]['year'] ) )
-          in_list.append( months[k]['in'] )
-          out_list.append( months[k]['out'] )
-          net_list.append( months[k]['net'] )
-          if months[k]['in'] > maximum:
-            maximum = months[k]['in']
-          if months[k]['out'] < minimum:
-            minimum = months[k]['out']
+              logging.debug( "key " + key + " not found" )
+            # group other fields
+            groups['names'][i['name']] += float( i['net_amount'] )
+          
+          month_list = []
+          in_list = []
+          out_list = []
+          net_list = []
+          keys = months.keys()
+          keys.sort()
+          maximum = 0
+          minimum = 0
+          for k in keys:
+            month_list.append( "%02i/%04i" % ( months[k]['month'], months[k]['year'] ) )
+            in_list.append( months[k]['in'] )
+            out_list.append( months[k]['out'] )
+            net_list.append( months[k]['net'] )
+            if months[k]['in'] > maximum:
+              maximum = months[k]['in']
+            if months[k]['out'] < minimum:
+              minimum = months[k]['out']
+  
+          y_list = []
+          y_value = []
+          x_list = []
+          x_value = []
+          for k in groups['names']:
+            amt = groups['names'][k] 
+            if amt > 0:
+              y_list.append( k )
+              y_value.append( groups['names'][k] )
+            else:
+              x_list.append( k )
+              x_value.append( -groups['names'][k] )
 
-        y_list = []
-        y_value = []
-        y_max = 0
-        x_list = []
-        x_value = []
-        x_max = 0
-        for k in groups['names']:
-          amt = groups['names'][k] 
-          if amt > 0:
-            y_list.append( k )
-            y_value.append( groups['names'][k] )
-            if amt > y_max:
-              y_max = amt
-          else:
-            x_list.append( k )
-            x_value.append( -groups['names'][k] )
-            if amt < x_max:
-              x_max = amt
-        data = { 
-          'result': tx.items, 
-          'months': month_list, 
-          'max': maximum, 'min': minimum, 
-          'in_list': in_list, 'out_list': out_list, 'net_list': net_list, 
-          'yl': y_list, 'yv': y_value, 'ymax': y_max,
-          'xl': x_list, 'xv': x_value, 'xmax': -x_max,
-          'groups': groups }
-        path = os.path.join(os.path.dirname(__file__), 'templates/tx.htm')
-        self.response.out.write(template.render(path, data))
+          # build balance
+          current = float(balance.items[0]['amount'])
+          balances = [ current, ]
+          for i in tx.items: # newest to oldest
+            current -= float(i['net_amount'])
+            balances.insert(0, current)
+  
+          data = { 
+            'result': tx.items, 
+            'months': month_list, 
+            'max': maximum, 'min': minimum, 
+            'in_list': in_list, 'out_list': out_list, 'net_list': net_list, 
+            'yl': y_list, 'yv': y_value, 'ymax': max(y_value),
+            'xl': x_list, 'xv': x_value, 'xmax': max(x_value),
+            'groups': groups,
+            'balances': balances, 'bmax': max(balances), 'bmin': min(balances) }
+          path = os.path.join(os.path.dirname(__file__), 'templates/tx.htm')
+          self.response.out.write(template.render(path, data))
+        else:
+          data = { 'message': 'GetBalance failed' }
+          path = os.path.join(os.path.dirname(__file__), 'templates/main.htm')
+          self.response.out.write(template.render(path, data))
       else:
         data = { 'message': 'Transaction search failed' }
         path = os.path.join(os.path.dirname(__file__), 'templates/main.htm')
